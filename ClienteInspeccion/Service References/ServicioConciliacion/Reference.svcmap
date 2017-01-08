@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="6cdb1c0b-c5d1-4c9d-813a-34bd66f446c5" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://localhost:4322/servicioConciliacion" Protocol="http" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="servicioConciliacion.xsd" MetadataType="Schema" ID="74f5f07a-9255-4981-8c7b-c397cf6fb0f3" SourceId="1" SourceUrl="http://localhost:4322/servicioConciliacion?xsd=xsd1" />
+    <MetadataFile FileName="servicioConciliacion1.xsd" MetadataType="Schema" ID="af076b5e-6ca6-4eb4-aa70-1805e56facb4" SourceId="1" SourceUrl="http://localhost:4322/servicioConciliacion?xsd=xsd0" />
+    <MetadataFile FileName="servicioConciliacion2.xsd" MetadataType="Schema" ID="8439e043-765d-43d1-a1c3-82c7902c4627" SourceId="1" SourceUrl="http://localhost:4322/servicioConciliacion?xsd=xsd2" />
+    <MetadataFile FileName="servicioConciliacion.disco" MetadataType="Disco" ID="8402afd0-5983-461d-b924-ec49e9e1a9a0" SourceId="1" SourceUrl="http://localhost:4322/servicioConciliacion?disco" />
+    <MetadataFile FileName="ServicioConciliacion.wsdl" MetadataType="Wsdl" ID="afa7cf1b-41a9-4a63-8af9-9ed2e7f1accf" SourceId="1" SourceUrl="http://localhost:4322/servicioConciliacion?wsdl" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<usuario>
+
+  <ipServidor>192.168.137.86</ipServidor>
+
+  <ipCliente>192.168.137.86</ipCliente>
+  
+  <puerto>1000</puerto>
+
+</usuario>

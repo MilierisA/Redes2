@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<servidor>
+
+  <ip>192.168.137.86</ip>
+
+  <puerto>1000</puerto>
+  
+</servidor>

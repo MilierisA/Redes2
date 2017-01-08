@@ -1,0 +1,848 @@
+Stack Exchange Inbox Reputation and Badges sign up log in tour help  
+
+Search Q&A
+
+Stack Overflow
+Questions
+ 
+Jobs
+ 
+Tags
+ 
+Users
+ 
+Badges
+ 
+Ask Question
+_ Stack Overflow is a community of 4.7 million programmers, just like you, helping each other. 
+
+Join them; it only takes a minute:
+
+Sign up
+Join the Stack Overflow community to:
+Ask programming questions Answer and help your peers Get recognized for your expertise
+How do I concatenate two arrays in C#?
+
+
+up vote
+132
+down vote
+favorite
+15
+int[] x = new int [] { 1, 2, 3};
+int[] y = new int [] { 4, 5 };
+
+int[] z = // your answer here...
+
+Debug.Assert(z.SequenceEqual(new int[] { 1, 2, 3, 4, 5 }));
+--
+
+Right now I use
+
+int[] z = x.Concat(y).ToArray();
+Is there an easier or more efficient method?
+
+c#
+shareimprove this question
+edited Aug 2 '15 at 1:39
+
+Peter Mortensen
+9,505116798
+asked Oct 10 '09 at 6:58
+
+hwiechers
+6,60633450
+6	 	
+What do you mean by "efficient"? The code is short enough as it is, so I assume you mean efficient in terms of CPU/RAM? – TToni Oct 10 '09 at 7:04
+2	 	
+No, a quick look with Reflector shows that it uses a double-when-full buffer – erikkallen Oct 10 '09 at 10:24
+  	 	
+Just be clear I need z to be a of type int[]. – hwiechers Oct 11 '09 at 10:56
+1	 	
+I'm not really that concerned about efficiency. (I did say easier or more efficient.) I asked the question to check how other people were handling this common task. – hwiechers Oct 11 '09 at 10:58
+add a comment
+19 Answers
+active oldest votes
+up vote
+176
+down vote
+accepted
+var z = new int[x.Length + y.Length];
+x.CopyTo(z, 0);
+y.CopyTo(z, x.Length);
+shareimprove this answer
+edited Oct 27 '14 at 11:46
+
+RaphaelH
+7931028
+answered Oct 10 '09 at 7:08
+
+Zed
+34.9k55388
+2	 	
+@manthrax -> In its defense, C# tends to favor lists which are much more powerful than arrays. It seems the only functional purpose for using arrays is for Interop calls (Unmanaged C++). – Levi Fuller Oct 26 '15 at 22:40
+  	 	
+@LeviFuller Another place where C# uses array is with variable-number params parameters. – ChrisW Jan 2 at 13:33
+  	 	
+@ChrisW I'd consider the params array more of a syntactical limitation. If you're going to concatenate it with another array, I'd still opt for <array>.ToList() – Levi Fuller Jan 3 at 17:01
+  	 	
+@LeviFuller - it's odd that many system routines return arrays instead of lists. eg System.IO.Directory.GetFiles() returns an array of strings. – orion elenzil Jan 7 at 17:55
+add a comment
+
+up vote
+43
+down vote
+Try this:
+
+List<int> list = new List<int>();
+list.AddRange(x);
+list.AddRange(y);
+int[] z = list.ToArray();
+shareimprove this answer
+edited Aug 2 '15 at 1:39
+
+Peter Mortensen
+9,505116798
+answered Oct 10 '09 at 7:03
+
+Adriaan Stander
+102k11160208
+4	 	
+Or even List<int> list = new List<int>(x); – Matthew Scharley Oct 10 '09 at 7:04
+3	 	
+How is that more efficient than x.Concat(y)? It works and all, I'm just wondering if there is something that makes it better? – Mike Two Oct 10 '09 at 7:07
+5	 	
+you might want to make the first line List<int> list = new List<int>(x.Length + y.Length); To avoid the resize that might happen as you call AddRange – Mike Two Oct 10 '09 at 7:09
+2	 	
+@Mathew Scharley. The question is asking for a more efficient solution. I know the title makes it sound like any old combination will do but the full question goes beyond that. Reading some of the answers I just feel some people are answering the title. So I thought that this answer should probably mention efficiency if it deserves the upvotes since that seemed to be the point of the question. – Mike Two Oct 10 '09 at 7:22
+1	 	
+@Matthew Actually I'm not talking about Array.Concat. I don't think there is one. I was thinking of the extension method in the Enumerable class. It actually just constructs an iterator that iterates over both arrays. So there are no copies or resizes with that approach. – Mike Two Oct 10 '09 at 7:29
+show 10 more comments
+up vote
+35
+down vote
+You could write an extension method:
+
+public static T[] Concat<T>(this T[] x, T[] y)
+{
+    if (x == null) throw new ArgumentNullException("x");
+    if (y == null) throw new ArgumentNullException("y");
+    int oldLen = x.Length;
+    Array.Resize<T>(ref x, x.Length + y.Length);
+    Array.Copy(y, 0, x, oldLen, y.Length);
+    return x;
+}
+Then:
+
+int[] x = {1,2,3}, y = {4,5};
+int[] z = x.Concat(y); // {1,2,3,4,5}
+shareimprove this answer
+answered Oct 10 '09 at 7:13
+
+Marc Gravell?
+598k13816632142
+1	 	
+Isn't there already an extension method that works on any IEnumerable? – Mike Two Oct 10 '09 at 7:17
+1	 	
+Yes, and I'd use that happily for most cases. But they have lots of overheads. It depends; 98% of the time the overheads are fine. If you are in the 2%, though, then some direct memcopy/array work is handy. – Marc Gravell? Oct 10 '09 at 7:21
+1	 	
+@nawfal, how is Copy faster than CopyTo? Care to elaborate? – skrebbel Nov 23 '12 at 12:35
+1	 	
+@skrebbel mine was an inaccurate comment. I did some testing back then and I found Copy faster. But now it seems they are just equal. What I might have found back then could be that overall the Marc's approach is more efficient since he is passing the same instance back while in Zed's approach he is creating a new array. Apologies :) – nawfal Nov 23 '12 at 13:07
+1	 	
+@Shimmy It would not. Inside this method x is but a local variable, passing x as a ref to the resize method would create a new array and alter (the local variable) x to point to it. Or to rephrase: x passed into the resize and x inside the extension method is the same variable, but x is not passed into the extension method as a ref, so x is a different variable than the variable in the scope this extension was called from. – AnorZaken Feb 5 '15 at 20:34
+show 2 more comments
+up vote
+24
+down vote
+I settled on a more general-purpose solution that allows concatenating an arbitrary set of one-dimensional arrays of the same type. (I was concatenating 3+ at a time.)
+
+My function:
+
+    public static T[] ConcatArrays<T>(params T[][] list)
+    {
+        var result = new T[list.Sum(a => a.Length)];
+        int offset = 0;
+        for (int x = 0; x < list.Length; x++)
+        {
+            list[x].CopyTo(result, offset);
+            offset += list[x].Length;
+        }
+        return result;
+    }
+And usage:
+
+        int[] a = new int[] { 1, 2, 3 };
+        int[] b = new int[] { 4, 5, 6 };
+        int[] c = new int[] { 7, 8 };
+        var y = ConcatArrays(a, b, c); //Results in int[] {1,2,3,4,5,6,7,8}
+shareimprove this answer
+edited Aug 2 '15 at 1:41
+
+Peter Mortensen
+9,505116798
+answered Nov 3 '11 at 20:41
+
+deepee1
+6,50412035
+  	 	
+Liked the params T[][], never thought about passing arrays in as a params... – Shimmy Feb 2 '12 at 1:57
+  	 	
+Nice function, thanks! Changed params T[][] to this T[][] to make it an extension. – Mark Oct 10 '12 at 19:14
+  	 	
+The best solution, thanks! – Spook Oct 31 '13 at 13:13
+add a comment
+up vote
+18
+down vote
+This is it:
+
+using System.Linq;
+
+int[] array1 = { 1, 3, 5 };
+int[] array2 = { 0, 2, 4 };
+
+// Concatenate array1 and array2.
+var result1 = array1.Concat(array2);
+shareimprove this answer
+edited Aug 2 '15 at 1:43
+
+Peter Mortensen
+9,505116798
+answered Sep 20 '13 at 12:08
+
+Roland
+18112
+3	 	
+You mean int[] result = array1.ToList().Concat(array2.ToList()).toArray(); You cannot apply Concat on arrays directly I believe – Michail Michailidis Oct 21 '14 at 19:57 
+  	 	
+The code correct, as arrays in C# implements the IEnumerable interface. (See 6th paragraph of Remarks section in the following documentation: msdn.microsoft.com/en-us/library/system.array.aspx) – Tormod Haugene Nov 4 '14 at 9:46
+1	 	
+This solution -- z = x.Concat(y) -- is mentioned in the original question above. – Jon Schneider Feb 20 '15 at 19:32
+1	 	
+This is what happens without the toArray() Cannot implicitly convert type 'System.Collections.Generic.IEnumerable<string>' to 'string[]'. An explicit conversion exists (are you missing a cast?) – Tibor Udvari Jun 16 '15 at 11:32
+add a comment
+up vote
+8
+down vote
+You can take the ToArray() call off the end. Is there a reason you need it to be an array after the call to Concat?
+
+Calling Concat creates an iterator over both arrays. It does not create a new array so you have not used more memory for a new array. When you call ToArray you actually do create a new array and take up the memory for the new array.
+
+So if you just need to easily iterate over both then just call Concat.
+
+shareimprove this answer
+edited Oct 10 '09 at 7:36
+answered Oct 10 '09 at 7:02
+
+Mike Two
+23.6k65782
+add a comment
+up vote
+5
+down vote
+I know the OP was only mildly curious about performance. That larger arrays may get a different result (see @kurdishTree). And that it usually does not matter (@jordan.peoples). None the less, I was curious and therefore lost my mind ( as @TigerShark was explaining).... I mean that I wrote a simple test based on the original question.... and all the answers....
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace concat
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            int[] x = new int [] { 1, 2, 3};
+            int[] y = new int [] { 4, 5 };
+
+
+            int itter = 50000;
+            Console.WriteLine("test iterations: {0}", itter);
+
+            DateTime startTest = DateTime.Now;
+            for(int  i = 0; i < itter; i++)
+            {
+                int[] z;
+                z = x.Concat(y).ToArray();
+            }
+            Console.WriteLine ("Concat Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks );
+
+            startTest = DateTime.Now;
+            for(int  i = 0; i < itter; i++)
+            {
+                var vz = new int[x.Length + y.Length];
+                x.CopyTo(vz, 0);
+                y.CopyTo(vz, x.Length);
+            }
+            Console.WriteLine ("CopyTo Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks );
+
+            startTest = DateTime.Now;
+            for(int  i = 0; i < itter; i++)
+            {
+                List<int> list = new List<int>();
+                list.AddRange(x);
+                list.AddRange(y);
+                int[] z = list.ToArray();
+            }
+            Console.WriteLine("list.AddRange Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+            startTest = DateTime.Now;
+            for (int i = 0; i < itter; i++)
+            {
+                int[] z = Methods.Concat(x, y);
+            }
+            Console.WriteLine("Concat(x, y) Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+            startTest = DateTime.Now;
+            for (int i = 0; i < itter; i++)
+            {
+                int[] z = Methods.ConcatArrays(x, y);
+            }
+            Console.WriteLine("ConcatArrays Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+            startTest = DateTime.Now;
+            for (int i = 0; i < itter; i++)
+            {
+                int[] z = Methods.SSConcat(x, y);
+            }
+            Console.WriteLine("SSConcat Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+            startTest = DateTime.Now;
+            for (int k = 0; k < itter; k++)
+            {
+                int[] three = new int[x.Length + y.Length];
+
+                int idx = 0;
+
+                for (int i = 0; i < x.Length; i++)
+                    three[idx++] = x[i];
+                for (int j = 0; j < y.Length; j++)
+                    three[idx++] = y[j];
+            }
+            Console.WriteLine("Roll your own Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+
+            startTest = DateTime.Now;
+            for (int i = 0; i < itter; i++)
+            {
+                int[] z = Methods.ConcatArraysLinq(x, y);
+            }
+            Console.WriteLine("ConcatArraysLinq Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+            startTest = DateTime.Now;
+            for (int i = 0; i < itter; i++)
+            {
+                int[] z = Methods.ConcatArraysLambda(x, y);
+            }
+            Console.WriteLine("ConcatArraysLambda Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+            startTest = DateTime.Now;
+            for (int i = 0; i < itter; i++)
+            {
+                List<int> targetList = new List<int>(x);
+                targetList.Concat(y);
+            }
+            Console.WriteLine("targetList.Concat(y) Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+
+            startTest = DateTime.Now;
+            for (int i = 0; i < itter; i++)
+            {
+                int[] result = x.ToList().Concat(y.ToList()).ToArray();
+            }
+            Console.WriteLine("x.ToList().Concat(y.ToList()).ToArray() Test Time in ticks: {0}", (DateTime.Now - startTest).Ticks);
+        }
+    }
+    static class Methods
+    {
+        public static T[] Concat<T>(this T[] x, T[] y)
+        {
+            if (x == null) throw new ArgumentNullException("x");
+            if (y == null) throw new ArgumentNullException("y");
+            int oldLen = x.Length;
+            Array.Resize<T>(ref x, x.Length + y.Length);
+            Array.Copy(y, 0, x, oldLen, y.Length);
+            return x;
+        }
+
+        public static T[] ConcatArrays<T>(params T[][] list)
+        {
+            var result = new T[list.Sum(a => a.Length)];
+            int offset = 0;
+            for (int x = 0; x < list.Length; x++)
+            {
+                list[x].CopyTo(result, offset);
+                offset += list[x].Length;
+            }
+            return result;
+        }
+
+
+        public static T[] SSConcat<T>(this T[] first, params T[][] arrays)
+        {
+            int length = first.Length;
+            foreach (T[] array in arrays)
+            {
+                length += array.Length;
+            }
+            T[] result = new T[length];
+            length = first.Length;
+            Array.Copy(first, 0, result, 0, first.Length);
+            foreach (T[] array in arrays)
+            {
+                Array.Copy(array, 0, result, length, array.Length);
+                length += array.Length;
+            }
+            return result;
+        }
+
+        public static T[] ConcatArraysLinq<T>(params T[][] arrays)
+        {
+            return (from array in arrays
+                    from arr in array
+                    select arr).ToArray();
+        }
+
+        public static T[] ConcatArraysLambda<T>(params T[][] arrays)
+        {
+            return arrays.SelectMany(array => array.Select(arr => arr)).ToArray();
+        }
+    }
+
+}
+The result was:
+
+enter image description here
+
+Roll your own wins.
+
+shareimprove this answer
+answered Nov 14 '14 at 20:39
+
+amalgamate
+5641723
+  	 	
+In fairness to the methods that used methods, the Methods probably added roughly 10,000 ticks on my system. – amalgamate Nov 14 '14 at 20:57
+1	 	
+I ran your code in visual studio 2013 in release mode and found that, if the tested array is not so tiny as yours (like 1000 elements), CopyTo will be the fasest and ~3x faster than Roll your own. – Mr. Ree Jul 7 '15 at 1:48
+  	 	
+@Mr.Ree Yes, my array was truly tiny wasn't it. Thanks. Would be interested to see if Block copy does even better... – amalgamate Jul 7 '15 at 15:13 
+add a comment
+up vote
+4
+down vote
+public static T[] Concat<T>(this T[] first, params T[][] arrays)
+{
+    int length = first.Length;
+    foreach (T[] array in arrays)
+    {
+        length += array.Length;
+    }
+    T[] result = new T[length];
+    length = first.Length;
+    Array.Copy(first, 0, result, 0, first.Length);
+    foreach (T[] array in arrays)
+    {
+        Array.Copy(array, 0, result, length, array.Length);
+        length += array.Length;
+    }
+    return result;
+}
+shareimprove this answer
+answered Aug 6 '12 at 11:22
+
+Sergey Shteyn
+411
+1	 	
+At StackOverflow please don't just paste code, but also explain your approach. In this specific case you may also have to explain what your late answer adds to the answers already given (and accepted) – Gert Arnold Aug 6 '12 at 21:53
+1	 	
+Not sure what that "this" is doing before the first param, but for the rest, this is an excellent function. Generic, and with an infinite amount of parameters. – Nyerguds Sep 24 '12 at 10:40
+1	 	
+Hi Nyerguds. To answer your question, the "this" keyword is used to make the function an extension method. For more information on extension methods check out this MSDN article – JFish222 Jan 31 '13 at 2:29 
+add a comment
+up vote
+2
+down vote
+You can do it the way you have referred to, or if you want to get really manual about it you can roll your own loop:
+
+        string[] one = new string[] { "a", "b" };
+        string[] two = new string[] { "c", "d" };
+        string[] three;
+
+        three = new string[one.Length + two.Length];
+
+        int idx = 0;
+
+        for (int i = 0; i < one.Length; i++)
+            three[idx++] = one[i];
+        for (int j = 0; j < two.Length; j++)
+            three[idx++] = two[j];
+shareimprove this answer
+answered Oct 10 '09 at 7:10
+
+Ben Lakey
+6,640134480
+  	 	
+good thinking, but this is slower compared to Array.Copy – nawfal Nov 23 '12 at 15:11
+  	 	
+@nawfal I think that will depend on array size. This won my small array sized test. – amalgamate Nov 14 '14 at 20:46
+add a comment
+up vote
+2
+down vote
+The most efficient structure in terms of RAM (and CPU) to hold the combined array would be a special class that implements IEnumerable (or if you wish even derives from Array) and links internally to the original arrays to read the values. AFAIK Concat does just that.
+
+In your sample code you could omit the .ToArray() though, which would make it more efficient.
+
+shareimprove this answer
+answered Oct 10 '09 at 7:15
+
+TToni
+5,77611125
+add a comment
+up vote
+2
+down vote
+Be careful with the Concat method. The post Array Concatenation in C# explains that:
+
+var z = x.Concat(y).ToArray();
+Will be inefficient for large arrays. That means the Concat method is only for meduim-sized arrays (up to 10000 elements).
+
+shareimprove this answer
+edited Aug 2 '15 at 1:43
+
+Peter Mortensen
+9,505116798
+answered Aug 2 '13 at 7:47
+
+kurdishTree
+211
+add a comment
+up vote
+1
+down vote
+What you need to remember is that when using LINQ you are utilizing delayed execution. The other methods described here all work perfectly, but they are executed immediately. Furthermore the Concat() function is probably optimized in ways you can't do yourself (calls to internal API's, OS calls etc.). Anyway, unless you really need to try and optimize, you're currently on your path to "the root of all evil" ;)
+
+shareimprove this answer
+answered Oct 10 '09 at 9:55
+
+TigerShark
+13.3k21126
+add a comment
+up vote
+1
+down vote
+I've found an elegant one line solution using LINQ or Lambda expression, both work the same (LINQ is converted to Lambda when program is compiled). The solution works for any array type and for any number of arrays.
+
+Using LINQ:
+
+public static T[] ConcatArraysLinq<T>(params T[][] arrays)
+{
+    return (from array in arrays
+            from arr in array
+            select arr).ToArray();
+}
+Using Lambda:
+
+public static T[] ConcatArraysLambda<T>(params T[][] arrays)
+{
+    return arrays.SelectMany(array => array.Select(arr => arr)).ToArray();
+}
+I've provided both for one's preference. Performance wise @Sergey Shteyn's or @deepee1's solutions are a bit faster, Lambda expression being the slowest. Time taken is dependant on type(s) of array elements, but unless there are millions of calls, there is no significant difference between the methods.
+
+shareimprove this answer
+edited Aug 22 '13 at 6:37
+answered Aug 22 '13 at 6:29
+
+Marko Grešak
+2,26431126
+add a comment
+up vote
+1
+down vote
+Try the following:
+
+T[] r1 = new T[size1];
+T[] r2 = new T[size2];
+
+List<T> targetList = new List<T>(r1);
+targetList.Concat(r2);
+T[] targetArray = targetList.ToArray();
+shareimprove this answer
+edited Dec 1 '13 at 18:58
+
+psxls
+4,32941839
+answered Dec 1 '13 at 18:41
+
+?????? ?????
+111
+add a comment
+up vote
+0
+down vote
+For int[] what you've done looks good to me. astander's answer would also work well for List<int>.
+
+shareimprove this answer
+answered Oct 10 '09 at 7:05
+
+mezoid
+13.4k2484139
+2	 	
+Concat would also work for List<int>. That's what is great about Concat, it works on any IEnumerable<> – Mike Two Oct 10 '09 at 7:12
+add a comment
+up vote
+0
+down vote
+For smaller arrays <10000 elements:
+
+using System.Linq;
+
+int firstArray = {5,4,2};
+int secondArray = {3,2,1};
+
+int[] result = firstArray.ToList().Concat(secondArray.ToList()).toArray();
+shareimprove this answer
+answered Oct 21 '14 at 20:00
+
+Michail Michailidis
+1,683926
+add a comment
+up vote
+0
+down vote
+I found this to be the simplest, given the arrays are identical, of course:
+
+array3 = array1.Union(array2).ToArray();
+shareimprove this answer
+edited Jan 15 '15 at 13:27
+
+king.code
+3,933121724
+answered Jan 15 '15 at 13:09
+
+ThePG
+11
+1	 	
+Union discards any duplicate items, so does not behave exactly as concatenation. – Mert Jan 15 '15 at 13:52
+add a comment
+up vote
+0
+down vote
+More efficient (faster) to use Buffer.BlockCopy over Array.CopyTo,
+
+int[] x = new int [] { 1, 2, 3};
+int[] y = new int [] { 4, 5 };
+
+int[] z = new int[x.Length + y.Length];
+var bytesInx = x.Length * sizeof(int);
+Buffer.BlockCopy(x, 0, z, 0, bytesInx);
+Buffer.BlockCopy(y, 0, z, bytesInx, y.Length * sizeof(int));
+shareimprove this answer
+answered Jan 15 '15 at 15:35
+
+Jodrell
+19.9k34067
+add a comment
+up vote
+-1
+down vote
+static class Extensions
+{
+    public static T[] Concat<T>(this T[] array1, params T[] array2)
+    {
+        return ConcatArray(array1, array2);
+    }
+
+    public static T[] ConcatArray<T>(params T[][] arrays)
+    {
+        int l, i;
+
+        for (l = i = 0; i < arrays.Length; l += arrays[i].Length, i++);
+
+        var a = new T[l];
+
+        for (l = i = 0; i < arrays.Length; l += arrays[i].Length, i++)
+            arrays[i].CopyTo(a, l);
+
+        return a;
+    }
+}
+I think the above solution is more general & lighter than the others I saw here. It is more general because it doesn't limit concatenation for only two arrays and is lighter because it doesn't use LINQ nor List.
+
+Note the solution is concise and the added generality doesn't add significant runtime overhead.
+
+shareimprove this answer
+edited May 9 '14 at 22:02
+answered May 9 '14 at 21:13
+
+drowa
+1388
+  	 	
+I'd recommend trying to find newer questions or ones hat don't already have numerous answers - including one pretty much just like yours. – Andrew Barber May 10 '14 at 1:19
+  	 	
+I proposed this solution because I think it summarizes what is good from the other ones. It was crafted. – drowa May 10 '14 at 5:50
+add a comment
+Your Answer
+
+
+ 
+Sign up or log in
+
+Sign up using Google
+Sign up using Facebook
+Sign up using Email and Password
+Post as a guest
+
+Name
+
+Email
+
+required, but never shown
+ Post Your Answer
+By posting your answer, you agree to the privacy policy and terms of service.
+
+Not the answer you're looking for?	Browse other questions tagged c# or ask your own question.
+
+asked
+
+6 years ago
+
+viewed
+
+141314 times
+
+active
+
+8 months ago
+
+
+Want a c# job?
+Software Engineering Manager - $100k
+CrossoverNo office location
+REMOTE
+c#java
+Software Engineer C# - $30K
+CrossoverNo office location
+REMOTE
+c#.net
+Crossover Software Engineering Manager - $100k
+CrossoverNo office location
+REMOTE
+c#java
+ASP.NET and C# Architect (with Sitecore) - $60k
+CrossoverNo office location
+REMOTE
+c#.net
+Linked
+
+1 Merge two string arrays in .NET/C# 2.0?
+2 How to append some object arrays in C#?
+2 how can I take 3 string arrays(contains files) into a single array
+0 Union two 2-D arrays in c#(not two 1-D arrays)
+46 Most efficient way to append arrays in C#?
+4 Array concatenation in C#
+3 C# 2-d array concatenation
+3 What's the best way to add an item to a C# array?
+0 Merging Arrays or Appending to an array
+-5 Inserting a string method into an string array
+see more linked questions…
+Related
+
+1235 How do I calculate someone's age in C#?
+2090 How do I enumerate an enum?
+741 How do you convert Byte Array to Hexadecimal String, and vice versa?
+861 What do two question marks together mean in C#?
+1439 How to get a consistent byte representation of strings in C# without manually specifying an encoding?
+2 LINQ concatenating elements in two string arrays
+3 How to concatenate two columns in linq to sql query's select projection
+893 \d is less efficient than [0-9]
+0 Formatting C# two dimensional array to Javascript
+0 how to join two out of three values of an array
+Hot Network Questions
+
+My DM is my roommate and not a good DM... help?
+String interpolation using named parameters in C#6
+If a person's name is Null then how would it break the database?
+Why are my reed relays releasing 10x faster than spec?
+Game of Life: Kill the Sun
+GR and my journey to the centre of the Earth
+Are cloud storage services a good strategy to protect against ransomware attacks?
+What do I need to make fluffy toys move and talk?
+What would it feel like on the surface of a planet while it collides with another planet?
+problems using tikzmath
+Does a pear contain 600 times more formaldehyde than a vaccine?
+Where did the extra dime come from?
+A radar-invisible stealth car?
+Whatever happened to Superman's super powered moa?
+Unusual chemical reaction on PCB (SMPS circuit)
+What should you do if you catch ransomware mid-operation?
+Concerns about a very old PhD advisor?
+Should I include a "prestigious" invited-only conference/workshop on my CV?
+Clone content in another part of document?
+Move first N lines of output to end without using temporary file
+HTTPS web service switched to HTTP. What can go wrong?
+While in hiding, why did they have to apparate on the top step of Grimmauld Place entrance (and not directly inside)?
+How specific should the Single Responsibility pattern be for classes?
+My advisor demands second authorship, but my collaborator contributed much more than him. I don't want to be unethical, what should I do?
+question feed
+about us tour help blog chat data legal privacy policy work here advertising info mobile contact us feedback
+TECHNOLOGY	LIFE / ARTS	CULTURE / RECREATION	SCIENCE	OTHER
+Stack Overflow
+Server Fault
+Super User
+Web Applications
+Ask Ubuntu
+Webmasters
+Game Development
+TeX - LaTeX
+Programmers
+Unix & Linux
+Ask Different (Apple)
+WordPress Development
+Geographic Information Systems
+Electrical Engineering
+Android Enthusiasts
+Information Security
+Database Administrators
+Drupal Answers
+SharePoint
+User Experience
+Mathematica
+Salesforce
+ExpressionEngine® Answers
+more (13)
+Photography
+Science Fiction & Fantasy
+Graphic Design
+Movies & TV
+Seasoned Advice (cooking)
+Home Improvement
+Personal Finance & Money
+Academia
+more (9)
+English Language & Usage
+Skeptics
+Mi Yodeya (Judaism)
+Travel
+Christianity
+Arqade (gaming)
+Bicycles
+Role-playing Games
+more (21)
+Mathematics
+Cross Validated (stats)
+Theoretical Computer Science
+Physics
+MathOverflow
+Chemistry
+Biology
+more (5)
+Stack Apps
+Meta Stack Exchange
+Area 51
+Stack Overflow Careers
+site design / logo © 2016 Stack Exchange Inc; user contributions licensed under cc by-sa 3.0 with attribution required
+rev 2016.4.20.3491
